@@ -10,7 +10,7 @@ void update_waiting(int t, Queue *q)
 	Node *curr_node = q->head;
 	while (curr_node != NULL)
 	{
-		if (strcmp(curr_node->value->state, "WAITING"))
+		if (strcmp(curr_node->value->state, "WAITING") == 0)
 		{
 			if ((t - curr_node->value->io_init_time) % curr_node->value->waiting_delay == 0)
 			{
@@ -25,9 +25,10 @@ void update_waiting(int t, Queue *q)
 struct Node *running_node(Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 {
 	struct Node *curr_node = q_fifo1->head;
+	//printf("el nodo cabeza de qfifo1 es %d\n", curr_node->value->pid);
 	while (curr_node != NULL)
 	{
-		if (strcmp(curr_node->value->state, "RUNNING"))
+		if (strcmp(curr_node->value->state, "RUNNING") == 0)
 		{
 			return curr_node;
 		}
@@ -36,7 +37,7 @@ struct Node *running_node(Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 	curr_node = q_fifo2->head;
 	while (curr_node != NULL)
 	{
-		if (strcmp(curr_node->value->state, "RUNNING"))
+		if (strcmp(curr_node->value->state, "RUNNING") == 0)
 		{
 			return curr_node;
 		}
@@ -45,12 +46,13 @@ struct Node *running_node(Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 	curr_node = q_sjf->head;
 	while (curr_node != NULL)
 	{
-		if (strcmp(curr_node->value->state, "RUNNING"))
+		if (strcmp(curr_node->value->state, "RUNNING") == 0)
 		{
 			return curr_node;
 		}
 		curr_node = curr_node->next;
 	}
+
 	return NULL;
 }
 
@@ -132,9 +134,10 @@ void enqueue_processes_q1(Process **process_array, int len_array, int t, Queue *
 {
 	for (int i = 0; i < len_array; i++)
 	{
-		if (process_array[i]->init_time == t)
+		if (process_array[i] != NULL && process_array[i]->init_time == t)
 		{
 			enqueue(q_fifo1, process_array[i]);
+			process_array[i] = NULL;
 		}
 	}
 }
@@ -168,7 +171,7 @@ bool ingresar_cpu(int t, Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 	Node *curr_node = q_fifo1->head;
 	while (curr_node != NULL)
 	{
-		if (strcmp(curr_node->value->state, "READY"))
+		if (strcmp(curr_node->value->state, "READY") == 0)
 		{
 			curr_node->value->t_first = t;
 			curr_node->value->state = "RUNNING";
@@ -184,7 +187,7 @@ bool ingresar_cpu(int t, Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 	curr_node = q_fifo2->head;
 	while (curr_node != NULL)
 	{
-		if (strcmp(curr_node->value->state, "READY"))
+		if (strcmp(curr_node->value->state, "READY") == 0)
 		{
 			curr_node->value->t_first = t;
 			curr_node->value->state = "RUNNING";
@@ -200,7 +203,7 @@ bool ingresar_cpu(int t, Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 	curr_node = q_sjf->head;
 	while (curr_node != NULL)
 	{
-		if (strcmp(curr_node->value->state, "READY"))
+		if (strcmp(curr_node->value->state, "READY") == 0)
 		{
 			curr_node->value->t_first = t;
 			curr_node->value->state = "RUNNING";
@@ -246,7 +249,6 @@ int main(int argc, char const *argv[])
 	printf("Cantidad de procesos: %d\n", input_file->len);
 	for (int i = 0; i < input_file->len; ++i)
 	{
-		printf("HOLA");
 		char *name =  input_file->lines[i][0];
 		int pid = atoi(input_file->lines[i][1]);
 		int priority = 1;
@@ -256,10 +258,8 @@ int main(int argc, char const *argv[])
 		int waiting_delay = atoi(input_file->lines[i][5]);
 		int aging = atoi(input_file->lines[i][6]);
 		Process *p = init_process(pid, name, priority, init_time, burst, wait, waiting_delay, aging);
-		printf("HOOLA");
 		process_array[i] = p;
 	}
-	printf("PASE EL FOR");
 	int change_cpu = 0;
 	int counter = 0;
 	int t = 0;
@@ -274,6 +274,7 @@ int main(int argc, char const *argv[])
 			update_running(t, change_cpu, runnin_node, q_fifo1, q_fifo2, q_sjf);
 			if (change_cpu == 2)
 			{
+				printf("termino el proceso %d\n", runnin_node->value->pid);
 				runnin_node->value->t_out = t;
 				finished_process_array[counter] = runnin_node->value;
 				counter++;
@@ -283,7 +284,10 @@ int main(int argc, char const *argv[])
 				}
 			}
 		}
+
+		
 		enqueue_processes_q1(process_array, input_file->len, t, q_fifo1);
+		printf("la cabeza de qfifo1 es: %d\n", q_fifo1->head->value->pid);
 		enqueue_aging(t, q_fifo1, q_fifo2, q_sjf);
 		if (change_cpu == 1 || change_cpu == 2)
 		{
