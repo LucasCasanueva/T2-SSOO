@@ -51,28 +51,31 @@ void dequeue(Queue *q, struct Process *process) {
     // the scheduler need to verify if the q->head is empty
     Node *curr_node = q->head;
     Node *prev_node = NULL;
-    while (curr_node->value != process)
+    if (curr_node != NULL)
     {
-        prev_node = curr_node;
-        curr_node = curr_node->next;
-    }
-    if (curr_node == q->head)
-    {
-        q->head = q->head->next;
-        if (q->head == NULL)
+        while (curr_node->value != process)
         {
-            q->tail = NULL;
+            prev_node = curr_node;
+            curr_node = curr_node->next;
         }
+        if (curr_node == q->head)
+        {
+            q->head = q->head->next;
+            if (q->head == NULL)
+            {
+                q->tail = NULL;
+            }
+        }
+        else if (curr_node == q->tail)
+        {
+            q->tail = prev_node;
+        }
+        else
+        {
+            prev_node->next = curr_node->next;
+        }
+        //free(curr_node);
     }
-    else if (curr_node == q->tail)
-    {
-        q->tail = prev_node;
-    }
-    else
-    {
-        prev_node->next = curr_node->next;
-    }
-    //free(curr_node);
 }
 
 // this is the method to add a new node in a SFJ LIST
