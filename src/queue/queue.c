@@ -72,7 +72,7 @@ void dequeue(Queue *q, struct Process *process) {
     {
         prev_node->next = curr_node->next;
     }
-    free(curr_node);
+    //free(curr_node);
 }
 
 // this is the method to add a new node in a SFJ LIST
