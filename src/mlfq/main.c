@@ -25,9 +25,10 @@ void update_waiting(int t, Queue *q)
 struct Node *running_node(Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 {
 	struct Node *curr_node = q_fifo1->head;
-	//printf("el nodo cabeza de qfifo1 es %d\n", curr_node->value->pid);
+	
 	while (curr_node != NULL)
 	{
+		//printf("the runing node inside the function is..%d\n", curr_node->value->pid);
 		if (strcmp(curr_node->value->state, "RUNNING") == 0)
 		{
 			return curr_node;
@@ -56,7 +57,7 @@ struct Node *running_node(Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 	return NULL;
 }
 
-void update_running(int t, int change_cpu, Node *running_node, Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
+int update_running(int t, int change_cpu, Node *running_node, Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 {
 	running_node->value->burst--;
 	if (running_node->value->burst == 0)
@@ -85,19 +86,22 @@ void update_running(int t, int change_cpu, Node *running_node, Queue *q_fifo1, Q
 		change_cpu = 1;
 		if (running_node->value->priority == 1)
 		{
-			dequeue(q_fifo1, running_node->value);
 			enqueue(q_fifo1, running_node->value);
+			dequeue(q_fifo1, running_node->value);
 		}
 		else if (running_node->value->priority == 2)
 		{
 			running_node->value->priority = 1;
-			dequeue(q_fifo2, running_node->value);
 			enqueue(q_fifo1, running_node->value);
+			dequeue(q_fifo2, running_node->value);
+			
 		}
 		else
 		{
-			dequeue(q_sjf, running_node->value);
+			printf("the running node pid is: %d\n", running_node->value->pid);
 			sjf_final_enqueue(q_sjf, running_node->value);
+			printf("after de sfj final enqueeue...\n");
+			dequeue(q_sjf, running_node->value);
 		}
 	}
 	else
@@ -106,12 +110,18 @@ void update_running(int t, int change_cpu, Node *running_node, Queue *q_fifo1, Q
 		{
 			if ((t - running_node->value->cpu_init_time) % q_fifo1->quantum == 0)
 			{
+				//printf("Entra a cuando se acaba el quantum del running node pid: %d\n", running_node->value->pid);
+				//printf("el que le sigue es el de pid con state: %d  %s\n", running_node->next->value->pid, running_node->next->value->state);
 				change_cpu = 1;
 				running_node->value->state = "READY";
 				running_node->value->priority = 2;
 				running_node->value->interrupts++;
-				dequeue(q_fifo1, running_node->value);
+				//dequeue(q_fifo1, running_node->value);
+				// Aca tira un error porque el running value es un node que fue liberado
 				enqueue(q_fifo2, running_node->value);
+				// Cambie el dequeue despues del enqueue para que no tire error por estar liberado
+				dequeue(q_fifo1, running_node->value);
+				printf("inside the condition that indicates the quantum over prior 1\n");
 			}
 		}
 		else if (running_node->value->priority == 2)
@@ -122,11 +132,13 @@ void update_running(int t, int change_cpu, Node *running_node, Queue *q_fifo1, Q
 				running_node->value->state = "READY";
 				running_node->value->priority = 3;
 				running_node->value->interrupts++;
-				dequeue(q_fifo2, running_node->value);
 				order_enqueue(q_sjf, running_node->value);
+				dequeue(q_fifo2, running_node->value);
 			}
 		}
 	}
+	//printf("inside the update running the change cpu is %d\n", change_cpu);
+	return change_cpu;
 }
 
 /* Ingresa los procesos correspondientes a la primera cola */
@@ -149,20 +161,25 @@ void enqueue_aging(int t, Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 	{
 		if ((t - curr_node->value->init_time) % curr_node->value->aging == 0)
 		{
-			dequeue(q_fifo2, curr_node->value);
+			// cambiar el dequeue a despues del enqueue
 			enqueue(q_fifo1, curr_node->value);
-			curr_node = curr_node->next;
+			dequeue(q_fifo2, curr_node->value);
+			// este cambio de curr node debe ir afuera del if osino nunca cambia
+			//curr_node = curr_node->next;
 		}
+		curr_node = curr_node->next;
 	}
 	curr_node = q_sjf->head;
 	while (curr_node != NULL)
 	{
 		if ((t - curr_node->value->init_time) % curr_node->value->aging == 0)
 		{
-			dequeue(q_sjf, curr_node->value);
 			enqueue(q_fifo1, curr_node->value);
-			curr_node = curr_node->next;
+			dequeue(q_sjf, curr_node->value);
+			// Aca lo mismo
+			//curr_node = curr_node->next;
 		}
+		curr_node = curr_node->next;
 	}
 }
 
@@ -177,6 +194,7 @@ bool ingresar_cpu(int t, Queue *q_fifo1, Queue *q_fifo2, Queue *q_sjf)
 			curr_node->value->state = "RUNNING";
 			curr_node->value->cpu_init_time = t;
 			curr_node->value->cpu_turns++;
+			printf("Entro a ingresar cpu y va a ingresar el process pid: %d con state %s\n", curr_node->value->pid, curr_node->value->state);
 			return true;
 		}
 		else
@@ -261,6 +279,7 @@ int main(int argc, char const *argv[])
 		process_array[i] = p;
 	}
 	int change_cpu = 0;
+	int* cpu_dir = &change_cpu;
 	int counter = 0;
 	int t = 0;
 	while (1)
@@ -268,11 +287,13 @@ int main(int argc, char const *argv[])
 		update_waiting(t, q_fifo1);
 		update_waiting(t, q_fifo2);
 		update_waiting(t, q_sjf);
+
 		struct Node *runnin_node = running_node(q_fifo1, q_fifo2, q_sjf);
 		if (runnin_node != NULL)
 		{
-			update_running(t, change_cpu, runnin_node, q_fifo1, q_fifo2, q_sjf);
-			if (change_cpu == 2)
+			//printf("the running node has the pid: %d\n", runnin_node->value->pid);
+			*cpu_dir = update_running(t, *cpu_dir, runnin_node, q_fifo1, q_fifo2, q_sjf);
+			if (*cpu_dir == 2)
 			{
 				printf("termino el proceso %d\n", runnin_node->value->pid);
 				runnin_node->value->t_out = t;
@@ -284,15 +305,22 @@ int main(int argc, char const *argv[])
 				}
 			}
 		}
-
-		
+		// change cpu como estaba no se cambiaba fuera del if (solo localmente dentro del if)
 		enqueue_processes_q1(process_array, input_file->len, t, q_fifo1);
-		printf("la cabeza de qfifo1 es: %d\n", q_fifo1->head->value->pid);
 		enqueue_aging(t, q_fifo1, q_fifo2, q_sjf);
-		if (change_cpu == 1 || change_cpu == 2)
+		if (runnin_node == NULL && *cpu_dir == 0)
+		{
+			ingresar_cpu(t, q_fifo1, q_fifo1, q_sjf);
+		}
+		// change cpu se cambia localmente en ingresar cpu pero dentro de main siempre esta en 0
+		if (*cpu_dir == 1 || *cpu_dir == 2)
 		{
 			ingresar_cpu(t, q_fifo1, q_fifo2, q_sjf);
 		}
+		printf("termino la iteracion en el tiempo: %d\n", t);
+		// la variable cpu dir cambia despues de de los enqueues (no se porque)
+		// porque esta condicion de que solo si change_cpu es 1 o 2 entra aca
+		// los procesos estan siempre en ready y por eso running node no retorna nada
 		t++;
 	}
 	printf("LLEGUE AL OUTPUT");

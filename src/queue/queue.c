@@ -135,9 +135,21 @@ bool order_enqueue(Queue *q, struct Process *new_process){
 
 void sjf_final_enqueue(Queue *q, struct Process *process)
 {
+    // esta funcion tira error 
+    printf("get inside the sfj final funciton with process %d...\n", process->pid);
     Node *new_node = malloc(sizeof(Node));
     new_node->value = process;
     new_node->next = NULL;
-    q->tail->next = new_node;
-    q->tail = new_node;
+    printf("info of the queue %d\n", q->tail->value->pid);
+    // el error era que si no hay cola entonces tira error
+    if (!(q->head))
+    {
+        printf("inside the if q head\n");
+        q->head = new_node;
+        q->tail = new_node;
+    }
+    else {
+        q->tail->next = new_node; 
+        q->tail = new_node;  
+    }
 }
