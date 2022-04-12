@@ -96,10 +96,10 @@ int update_running(int t, int change_cpu, Node *running_node, Queue *q_fifo1, Qu
 			dequeue(q_fifo2, running_node->value);
 			
 		}
-		else
+		else if (running_node->value->priority == 3)
 		{
 			printf("the running node pid is: %d\n", running_node->value->pid);
-			sjf_final_enqueue(q_sjf, running_node->value);
+			enqueue(q_sjf, running_node->value);
 			printf("after de sfj final enqueeue...\n");
 			dequeue(q_sjf, running_node->value);
 		}

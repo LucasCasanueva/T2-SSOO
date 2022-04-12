@@ -49,33 +49,52 @@ struct Process* dequeue(Queue *q) {
 
 void dequeue(Queue *q, struct Process *process) {
     // the scheduler need to verify if the q->head is empty
+    printf("id de la cabeza es %d\n", q->head->value->pid);
+    if (q->head->next == NULL)
+    {
+        printf("next es null\n");
+    }
     Node *curr_node = q->head;
     Node *prev_node = NULL;
-    if (curr_node != NULL)
+    while (1)
     {
-        while (curr_node->value != process)
+        printf("Entre al while del dequeue\n");
+        printf("curr_node process id es %d\n", curr_node->value->pid);
+        printf("input process id es %d\n", process->pid);
+        if (curr_node->value == process)
+        {
+            printf("BINGO\n");
+            break;
+        }
+        else
         {
             prev_node = curr_node;
             curr_node = curr_node->next;
         }
-        if (curr_node == q->head)
-        {
-            q->head = q->head->next;
-            if (q->head == NULL)
-            {
-                q->tail = NULL;
-            }
-        }
-        else if (curr_node == q->tail)
-        {
-            q->tail = prev_node;
-        }
-        else
-        {
-            prev_node->next = curr_node->next;
-        }
-        //free(curr_node);
     }
+    printf("Sali del while del dequeue\n");
+    if (curr_node == NULL)
+    {
+        printf("el curr node es null\n");
+    }
+    if (curr_node == q->head)
+    {
+        q->head = q->head->next;
+        if (q->head == NULL)
+        {
+            q->tail = NULL;
+        }
+    }
+    else if (curr_node == q->tail)
+    {
+        q->tail = prev_node;
+    }
+    else
+    {
+        prev_node->next = curr_node->next;
+    }
+    printf("Termine el dequeue\n");
+    free(curr_node);
 }
 
 // this is the method to add a new node in a SFJ LIST
@@ -140,6 +159,7 @@ void sjf_final_enqueue(Queue *q, struct Process *process)
 {
     // esta funcion tira error 
     printf("get inside the sfj final funciton with process %d...\n", process->pid);
+    printf("the id of the head is  %d...\n", q->head->value->pid);
     Node *new_node = malloc(sizeof(Node));
     new_node->value = process;
     new_node->next = NULL;
@@ -155,4 +175,5 @@ void sjf_final_enqueue(Queue *q, struct Process *process)
         q->tail->next = new_node; 
         q->tail = new_node;  
     }
+    printf("info of the queue %d\n", q->tail->value->pid);
 }
